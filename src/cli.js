@@ -3,10 +3,22 @@
 const { Command } = require('commander');
 const chalk = require('chalk');
 const ora = require('ora');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+
+// Auto-detect Python with chromadb support
+const PY_CMD = (() => {
+  const candidates = ['python3.12', 'python3', 'python'];
+  for (const cmd of candidates) {
+    try {
+      execSync(`${cmd} -c 'import chromadb'`, { stdio: 'pipe' });
+      return cmd;
+    } catch {}
+  }
+  return 'python3';
+})();
 
 // Load version from package.json
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
@@ -32,7 +44,6 @@ program
 // Update command - check for new version
 const updateCmd = program.command('update').description('Check for updates and upgrade agents-memory');
 updateCmd.action(() => {
-  const { execSync } = require('child_process');
   console.log(chalk.blue('🔄 Checking for updates...'));
   try {
     const current = packageJson.version;
@@ -89,7 +100,7 @@ function runPython(script, args = [], showSpinner = true) {
       spinner: 'dots'
     }).start() : null;
 
-    const py = spawn('python3', [path.join(SKILL_DIR, script), ...args], {
+    const py = spawn(PY_CMD, [path.join(SKILL_DIR, script), ...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: false
     });
@@ -166,17 +177,12 @@ function isDaemonRunning() {
 
 // Sync check if daemon socket exists
 function isDaemonSocketExists() {
-  const fs = require('fs');
   return fs.existsSync(DAEMON_SOCKET);
 }
 
 // Auto-start daemon if not running (async)
 async function ensureDaemon() {
   if (await isDaemonRunning()) return;
-  
-  const { spawn } = require('child_process');
-  const fs = require('fs');
-  const path = require('path');
   
   // Find daemon script - check multiple locations
   const possiblePaths = [
@@ -200,7 +206,7 @@ async function ensureDaemon() {
   
   // Start daemon in background using setsid
   try {
-    require('child_process').spawn('setsid', ['python3', daemonPath, '--daemon'], {
+    spawn('setsid', [PY_CMD, daemonPath, '--daemon'], {
       detached: true,
       stdio: 'ignore',
       shell: false
@@ -208,7 +214,7 @@ async function ensureDaemon() {
   } catch (e) {
     // Fallback: try direct spawn
     try {
-      require('child_process').spawn('python3', [daemonPath, '--daemon'], {
+      spawn(PY_CMD, [daemonPath, '--daemon'], {
         detached: true,
         stdio: 'ignore'
       }).unref();
@@ -341,12 +347,14 @@ program
   .option('-t, --type <type>', 'Entry type', 'solution')
   .option('-p, --project <name>', 'Project name')
   .option('-l, --logic <explanation>', 'Why/how it works')
+  .option('-i, --importance <n>', 'Importance score 0-1', parseFloat, 0.5)
   .action(async (problem, opts) => {
     const args = [problem];
     if (opts.solution) args.push('--solution', opts.solution);
     if (opts.type) args.push('--type', opts.type);
     if (opts.project) args.push('--project', opts.project);
     if (opts.logic) args.push('--logic', opts.logic);
+    if (opts.importance !== undefined && opts.importance !== 0.5) args.push('--importance', String(opts.importance));
 
     try {
       await runPython('memory_write.py', args);
@@ -436,11 +444,6 @@ program
   .command('init')
   .description('Initialize agents-memory (or run setup again)')
   .action(() => {
-    const { execSync } = require('child_process');
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-
     const GREEN = '\x1b[32m';
     const RED = '\x1b[31m';
     const YELLOW = '\x1b[33m';
@@ -455,7 +458,7 @@ program
 
     // Check Python
     try {
-      execSync('python3 --version', { stdio: 'pipe' });
+      execSync(`${PY_CMD} --version`, { stdio: 'pipe' });
     } catch (e) {
       console.error(`${RED}❌ Python 3 not found${RESET}`);
       return;
@@ -518,7 +521,6 @@ program
     // Create AGENTS.md in current working directory
     console.log('');
     console.log(`${CYAN}📝 Creating AGENTS.md in current directory:${RESET}`);
-    const { execSync: exec } = require('child_process');
     const cwd = process.cwd();
     const agentsPath = path.join(cwd, 'AGENTS.md');
 
@@ -576,10 +578,6 @@ program
   .command('init-project')
   .description('Create or append AGENTS.md section for semantic memory')
   .action(() => {
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-
     const memorySection = `
 
 ---

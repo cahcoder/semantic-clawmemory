@@ -6,6 +6,7 @@ Usage: memory_write.py <problem> [--solution <code>] [--logic <explanation>]
        [--importance <0.0-1.0>]
 """
 
+import re
 import sys
 import json
 import argparse
@@ -15,12 +16,41 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-try:
-    import chromadb
-    from chromadb.utils import embedding_functions
-except ImportError:
-    print("ERROR: chromadb not installed. Run: pip install chromadb sentence-transformers")
-    sys.exit(1)
+from chroma_client import (
+    get_chroma_client, get_embedding_function, get_settings,
+    expand_path, COLLECTIONS
+)
+from logger import get_logger
+
+log = get_logger("memory_write")
+
+MAX_CONTENT_LENGTH = 5000
+BLOCKED_PATTERNS = [
+    r'<script', r'javascript:', r'data:text/',
+    r'on\w+\s*=', r'<iframe',
+]
+
+
+def validate_content(text: str, field_name: str = "content") -> str:
+    """Validate and sanitize input content."""
+    if not text or not text.strip():
+        raise ValueError(f"{field_name} must not be empty")
+
+    text = text.strip()
+
+    if len(text) > MAX_CONTENT_LENGTH:
+        raise ValueError(f"{field_name} exceeds max length ({MAX_CONTENT_LENGTH} chars)")
+
+    for pattern in BLOCKED_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE):
+            raise ValueError(f"{field_name} contains disallowed content")
+
+    return text
+
+
+def validate_importance(value: float) -> float:
+    """Clamp importance to valid range."""
+    return max(0.0, min(1.0, float(value)))
 
 
 def memory_write(
@@ -32,34 +62,23 @@ def memory_write(
     language: str = None,
     importance: float = 0.5
 ):
-    """Store new entry to Chroma."""
-    
-    config_dir = Path(__file__).parent.parent / "config"
-    settings_file = config_dir / "settings.yaml"
-    
-    # Load settings
-    if settings_file.exists():
-        import yaml
-        with open(settings_file) as f:
-            settings = yaml.safe_load(f)
-    else:
-        settings = {
-            "chroma": {
-                "persist_directory": "~/.memory/chroma",
-                "embedding_model": "all-MiniLM-L6-v2",
-                "dimensions": 384
-            }
-        }
-    
-    persist_dir = Path(settings["chroma"]["persist_directory"]).expanduser()
-    
-    # Initialize Chroma
-    ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=settings["chroma"]["embedding_model"]
-    )
-    
-    client = chromadb.PersistentClient(path=str(persist_dir))
-    
+    """Store new entry to Chroma using shared client singleton."""
+
+    # Validate inputs
+    problem = validate_content(problem, "problem")
+    if solution:
+        solution = validate_content(solution, "solution")
+    if logic_solution:
+        logic_solution = validate_content(logic_solution, "logic_solution")
+    importance = validate_importance(importance)
+
+    settings = get_settings()
+    chroma_config = settings.get("chroma", {})
+    persist_dir = expand_path(chroma_config.get("persist_directory", "~/.memory/chroma"))
+
+    client = get_chroma_client()
+    ef = get_embedding_function()
+
     # Build text content
     content_parts = [f"Problem: {problem}"]
     if solution:
@@ -67,7 +86,7 @@ def memory_write(
     if logic_solution:
         content_parts.append(f"Logic: {logic_solution}")
     content = "\n\n".join(content_parts)
-    
+
     # Metadata
     metadata = {
         "project": project,
@@ -77,7 +96,7 @@ def memory_write(
         "importance": importance,
         "language": language or "unknown"
     }
-    
+
     # Determine collection by entry_type
     type_to_collection = {
         "solution": "tasks",
@@ -88,25 +107,27 @@ def memory_write(
         "chat": "casual",
         "prompt": "prompts"
     }
-    
+
     collection_name = type_to_collection.get(entry_type, "casual")
-    
+
     try:
         collection = client.get_or_create_collection(
             name=collection_name,
             embedding_function=ef
         )
-        
+
         entry_id = str(uuid.uuid4())
         collection.add(
             ids=[entry_id],
             documents=[content],
             metadatas=[metadata]
         )
-        
+
+        log.info(f"Stored entry {entry_id[:8]} in {collection_name}")
         return {"id": entry_id, "collection": collection_name, "status": "stored"}
-        
+
     except Exception as e:
+        log.error(f"Write failed: {e}")
         return {"error": str(e), "status": "failed"}
 
 
@@ -119,9 +140,9 @@ def main():
     parser.add_argument("--project", "-p", default="default", help="Project name")
     parser.add_argument("--language", help="Programming language")
     parser.add_argument("--importance", "-i", type=float, default=0.5, help="Importance 0.0-1.0")
-    
+
     args = parser.parse_args()
-    
+
     result = memory_write(
         problem=args.problem,
         solution=args.solution,
@@ -131,7 +152,7 @@ def main():
         language=args.language,
         importance=args.importance
     )
-    
+
     print(json.dumps(result, indent=2, default=str))
 
 

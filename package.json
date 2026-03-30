@@ -1,18 +1,30 @@
 {
   "name": "agents-memory",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Universal semantic memory layer for AI CLI tools. Remembers everything, forgets nothing.",
-  "main": "src/index.js",
+  "main": "src/cli.js",
   "bin": {
     "agents-memory": "src/cli.js",
     "am": "src/cli.js",
     "scm": "src/cli.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node scripts/postinstall.js"
+    "postinstall": "node scripts/postinstall.js",
+    "prepack": "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; true",
+    "test": "node src/cli.js --help"
   },
-  "files": "[\"src/\", \"skill/\", \"config/\", \"docs/\", \"scripts/\", \"README.md\", \"LICENSE\"]",
+  "files": [
+    "src/",
+    "skill/",
+    "scripts/",
+    "!scripts/__pycache__/",
+    "!**/__pycache__/",
+    "config/",
+    "docs/AGENTS.md",
+    "README.md",
+    "SKILL.md",
+    "requirements.txt"
+  ],
   "keywords": [
     "ai",
     "memory",

@@ -1,3 +1,24 @@
+# Dev files
+.git/
+.gitignore
+.gitattributes
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Internal docs (not for npm consumers)
+docs/memory-design-architecture.md
+docs/ACTION-PLAN.md
+
+# Dev config
+.memory/
+*.log

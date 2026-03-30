@@ -55,6 +55,42 @@ ANN Search  │ HNSW (M=32-48, ef=200-300)
 Similarity  │ Cosine similarity
 ```
 
+## Installation
+
+### npm (Universal CLI Wrapper)
+
+```bash
+npm install -g semantic-clawmemory
+
+# Configure (first run)
+semantic-clawmemory init
+
+# Verify
+semantic-clawmemory --version
+```
+
+The npm package wraps the Python core — no Python knowledge required.
+
+### Python (Direct)
+
+```bash
+# Clone
+git clone git@github.com:cahcoder/semantic-clawmemory.git
+cd semantic-clawmemory
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Add to PATH
+export PATH="$PWD/skill:$PATH"
+```
+
+### OpenClaw Plugin
+
+```bash
+openclaw plugin install semantic-clawmemory
+```
+
 ## Quick Start
 
 ```bash

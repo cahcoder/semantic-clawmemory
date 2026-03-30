@@ -1,0 +1,41 @@
+{
+  "name": "semantic-clawmemory",
+  "version": "1.0.0",
+  "description": "Universal semantic memory layer for AI CLI tools. Remembers everything, forgets nothing.",
+  "main": "src/index.js",
+  "bin": {
+    "semantic-clawmemory": "src/cli.js",
+    "scm": "src/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "ai",
+    "memory",
+    "semantic-search",
+    "chroma",
+    "openclaw",
+    "claude-code",
+    "gemini-cli",
+    "context-overflow"
+  ],
+  "author": "cahcoder",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com:cahcoder/semantic-clawmemory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cahcoder/semantic-clawmemory/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "ora": "^5.4.1"
+  }
+}

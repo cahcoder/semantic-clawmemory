@@ -1,4 +1,4 @@
-# semantic-clawmemory
+# agents-memory
 
 > **Universal semantic memory layer for AI CLI tools. Remembers everything, forgets nothing.**
 
@@ -61,13 +61,13 @@ Similarity  │ Cosine similarity
 
 ```bash
 # Install globally
-npm install -g semantic-clawmemory
+npm install -g agents-memory
 
 # Verify
-semantic-clawmemory --help
+agents-memory --help
 
 # Initialize (first time)
-semantic-clawmemory init
+agents-memory init
 ```
 
 The npm package auto-installs Python dependencies on first use.
@@ -76,8 +76,8 @@ The npm package auto-installs Python dependencies on first use.
 
 ```bash
 # Clone
-git clone git@github.com:cahcoder/semantic-clawmemory.git
-cd semantic-clawmemory
+git clone git@github.com:cahcoder/agents-memory.git
+cd agents-memory
 
 # Install dependencies
 pip install -r requirements.txt
@@ -90,11 +90,11 @@ pip install -r requirements.txt
 
 ```bash
 # Via npm
-npm install -g semantic-clawmemory
+npm install -g agents-memory
 
 # Or clone + link
-git clone git@github.com:cahcoder/semantic-clawmemory.git
-cd semantic-clawmemory
+git clone git@github.com:cahcoder/agents-memory.git
+cd agents-memory
 npm link
 ```
 
@@ -108,7 +108,7 @@ export PATH="$PWD/skill:$PATH"
 ### OpenClaw Plugin
 
 ```bash
-openclaw plugin install semantic-clawmemory
+openclaw plugin install agents-memory
 ```
 
 ## After Install (Required for AI CLI Tools)
@@ -121,7 +121,7 @@ After installing, you need to create an `AGENTS.md` file in your project directo
 
 ```bash
 # In your project directory
-semantic-clawmemory init-project
+agents-memory init-project
 # OR manually:
 touch AGENTS.md
 ```
@@ -133,26 +133,26 @@ touch AGENTS.md
 
 ## Memory Setup
 - MEMORY_DIR: ~/.memory/chroma
-- SKILL_DIR: ~/.npm-global/lib/node_modules/semantic-clawmemory/skill
+- SKILL_DIR: ~/.npm-global/lib/node_modules/agents-memory/skill
 
 ## PRE-LLM Hook (Before AI thinks)
 Before starting a task, query relevant memory:
-bash: semantic-clawmemory pre "{task description}"
+bash: agents-memory pre "{task description}"
 When results found, inject them into context.
 
 ## POST-LLM Hook (After AI responds)
 After successful response, store new learnings:
-bash: semantic-clawmemory post "{problem solved}" "{solution}"
+bash: agents-memory post "{problem solved}" "{solution}"
 Only store generic patterns, not specific values.
 
 ## Essential Commands
-- semantic-clawmemory search <query>  - Search memory
-- semantic-clawmemory write <problem> <solution> - Store learning
-- semantic-clawmemory bootstrap <project> - Init project memory
+- agents-memory search <query>  - Search memory
+- agents-memory write <problem> <solution> - Store learning
+- agents-memory bootstrap <project> - Init project memory
 ```
 
 ### For OpenClaw
-Skill auto-installed to `~/.openclaw/workspace/skills/semantic-clawmemory/`. No AGENTS.md needed.
+Skill auto-installed to `~/.openclaw/workspace/skills/agents-memory/`. No AGENTS.md needed.
 
 ---
 
@@ -234,7 +234,7 @@ Next time: instant recall, no manual solve needed
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  semantic-clawmemory                                         │
+│  agents-memory                                         │
 │                                                             │
 │  skill/                                                     │
 │  ├── memory_search.py      ← Query Chroma                  │

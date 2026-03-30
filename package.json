@@ -1,10 +1,11 @@
 {
-  "name": "semantic-clawmemory",
-  "version": "1.0.2",
+  "name": "agents-memory",
+  "version": "1.0.3",
   "description": "Universal semantic memory layer for AI CLI tools. Remembers everything, forgets nothing.",
   "main": "src/index.js",
   "bin": {
-    "semantic-clawmemory": "src/cli.js",
+    "agents-memory": "src/cli.js",
+    "am": "src/cli.js",
     "scm": "src/cli.js"
   },
   "scripts": {
@@ -26,10 +27,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cahcoder/semantic-clawmemory.git"
+    "url": "git+https://github.com/cahcoder/agents-memory.git"
   },
   "bugs": {
-    "url": "https://github.com/cahcoder/semantic-clawmemory/issues"
+    "url": "https://github.com/cahcoder/agents-memory/issues"
   },
   "engines": {
     "node": ">=18.0.0"

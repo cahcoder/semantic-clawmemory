@@ -8,11 +8,11 @@ Works with: Claude Code, Gemini CLI, OpenCode, Cursor, Codex, any AI CLI via AGE
 
 ```bash
 # Clone anywhere
-git clone git@github.com:cahcoder/semantic-clawmemory.git ~/semantic-clawmemory
+git clone git@github.com:cahcoder/agents-memory.git ~/agents-memory
 
 # Add to shell profile (pick one)
 echo 'export MEMORY_DIR="$HOME/.memory/chroma"' >> ~/.bashrc
-echo 'export SKILL_DIR="$HOME/semantic-clawmemory/skill"' >> ~/.bashrc
+echo 'export SKILL_DIR="$HOME/agents-memory/skill"' >> ~/.bashrc
 
 # Reload
 source ~/.bashrc

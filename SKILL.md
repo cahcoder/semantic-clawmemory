@@ -83,7 +83,7 @@ cp -r skill/* ~/.openclaw/skills/semantic-memory/
 ## Project Structure
 
 ```
-semantic-clawmemory/
+agents-memory/
 ├── SKILL.md           ← This file
 ├── skill/             ← OpenClaw skill directory
 │   ├── memory_search.py

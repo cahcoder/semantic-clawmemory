@@ -216,6 +216,19 @@ async function ensureDaemon() {
       console.error(chalk.yellow('Could not auto-start daemon'));
     }
   }
+  
+  // Wait for daemon to be ready (it takes ~10s to load model)
+  const maxWait = 60; // seconds
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWait * 1000) {
+    if (await isDaemonRunning()) {
+      return; // Daemon is ready
+    }
+    // Wait 1 second before next check
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  console.error(chalk.yellow('Warning: daemon may not be ready yet'));
 }
 
 async function daemonSearch(query, project, limit) {

@@ -29,29 +29,24 @@ function daemonCall(cmd, args) {
   });
 }
 
-function getLastUserMsg(messages) {
-  if (!messages || !messages.length) return null;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m && m.role === "user" && m.content) {
-      const c = Array.isArray(m.content) ? m.content.find(x => x && x.type === "text").text : m.content;
-      if (c) return c;
-    }
-    if (typeof m.content === "string" && m.content.length > 0) return m.content;
-  }
-  return null;
+function getMessageBody(event) {
+  // OpenClaw message:preprocessed event structure:
+  // event.context contains { from, to, body, bodyForAgent, ... }
+  const ctx = event && event.context;
+  if (!ctx) return null;
+  
+  // bodyForAgent contains the raw message text intended for the AI
+  // body is the original message text
+  const body = ctx.bodyForAgent || ctx.body;
+  return (body && typeof body === "string" && body.length > 0) ? body : null;
 }
 
 async function messagePreprocessed(event) {
-  const ctx = event && event.context;
-  const messages = ctx && ctx.messages;
-  console.log("[agents-memory] context keys:", ctx && Object.keys(ctx).join(","), "messages count:", messages && messages.length);
-  const msg = getLastUserMsg(messages);
-  console.log("[agents-memory] msg found:", msg ? msg.slice(0,50) : null);
+  const msg = getMessageBody(event);
   if (!msg || msg.length < 3) return;
   
   try {
-    console.log("[agents-memory] Query: " + msg.slice(0,30) + "...");
+    console.log("[agents-memory] Query: " + msg.slice(0,50) + "...");
     const results = await daemonCall("search", {query: msg, limit: 3});
     if (results && results.length) {
       const context = results.slice(0,3).map(r => "[" + (r.collection || "memory") + "] " + (r.content || "").slice(0,150)).join("\n");

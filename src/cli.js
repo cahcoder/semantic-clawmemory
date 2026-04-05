@@ -572,6 +572,18 @@ Only store generic patterns, not specific values.
     console.log(`${CYAN}║${RESET}   ✅ agents-memory ready!            ${CYAN}║${RESET}`);
     console.log(`${CYAN}╚══════════════════════════════════════════╝${RESET}`);
     console.log('');
+    console.log(`${YELLOW}📚 Other commands:${RESET}`);
+    console.log(`   agents-memory search <query>  - Search memory`);
+    console.log(`   agents-memory write <prob> <sol>  - Store learning`);
+    console.log(`   agents-memory gc          - Run garbage collection`);
+    console.log(`   agents-memory uninstall  - Complete uninstall`);
+    console.log('');
+    console.log(`${YELLOW}🔧 Cleanup / Reset:${RESET}`);
+    console.log(`   # Fresh reinstall (keep config, reset memory):`);
+    console.log(`   systemctl --user stop agents-memory-daemon`);
+    console.log(`   rm -rf ~/.memory/chroma/`);
+    console.log(`   systemctl --user start agents-memory-daemon`);
+    console.log('');
   });
 
 program

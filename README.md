@@ -146,9 +146,12 @@ bash: agents-memory post "{problem solved}" "{solution}"
 Only store generic patterns, not specific values.
 
 ## Essential Commands
+- agents-memory init          - Initialize setup
 - agents-memory search <query>  - Search memory
 - agents-memory write <problem> <solution> - Store learning
 - agents-memory bootstrap <project> - Init project memory
+- agents-memory gc             - Run garbage collection
+- agents-memory uninstall      - Complete uninstall
 ```
 
 ### For OpenClaw

@@ -20,6 +20,18 @@ collections:
   # Boost importance after N uses
   auto_boost_threshold: 3
   boost_amount: 0.1
+  
+  # Collection priority weights (used in search scoring)
+  priority:
+    critical: 0.30
+    core: 0.25
+    plan: 0.22
+    spec: 0.20
+    important: 0.15
+    progress: 0.12
+    tasks: 0.10
+    prompts: 0.05
+    casual: 0.00
 
 gc:
   # Run dedup every N days
@@ -40,6 +52,25 @@ memory:
   
   # Importance decay: after N days of no use
   decay_after_days: 30
+  
+  # Search optimization
+  search:
+    # Query optimization
+    max_query_length: 200
+    stopwords_enabled: true
+    
+    # Caching (in handler.js)
+    cache_ttl_seconds: 30
+    cache_max_entries: 100
+    
+    # HNSW parameters for ANN search
+    hnsw:
+      # Higher = better recall, slower search
+      ef_search: 200
+      # Construction time vs accuracy tradeoff
+      ef_construction: 200
+      # Bi-directional links (higher = more memory, better recall)
+      m: 48
 
 projects:
   # Default project for unclassified entries

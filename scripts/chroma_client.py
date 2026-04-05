@@ -21,6 +21,19 @@ _ef = None
 # Collection definitions (shared across modules)
 COLLECTIONS = ["critical", "core", "plan", "spec", "important", "tasks", "casual", "prompts", "progress"]
 
+# Collection priority weights (boost applied during scoring)
+COLLECTION_PRIORITY = {
+    "critical": 0.30,
+    "core": 0.25,
+    "plan": 0.22,
+    "spec": 0.20,
+    "important": 0.15,
+    "progress": 0.12,
+    "tasks": 0.10,
+    "prompts": 0.05,
+    "casual": 0.00,
+}
+
 try:
     import chromadb
     from chromadb.utils import embedding_functions
@@ -214,8 +227,44 @@ def _search_single_collection(args):
     return results
 
 
+def _score_result(entry, recency_weight=0.05):
+    """Calculate weighted score for a search result.
+    
+    Factors:
+    - similarity (base score)
+    - collection priority
+    - importance (normalized from 0.5 baseline)
+    - recency boost (recent entries get slight boost)
+    """
+    similarity = entry.get("similarity", 0)
+    collection = entry.get("collection", "casual")
+    metadata = entry.get("metadata", {})
+    
+    # Collection priority boost
+    col_boost = COLLECTION_PRIORITY.get(collection, 0)
+    
+    # Importance boost (centered at 0.5)
+    importance = metadata.get("importance", 0.5)
+    importance_boost = (importance - 0.5) * 0.2
+    
+    # Recency boost (entries accessed recently get slight boost)
+    recency_boost = 0
+    last_used = metadata.get("last_used", "")
+    if last_used:
+        try:
+            from datetime import datetime
+            age_days = (datetime.now() - datetime.fromisoformat(last_used)).days
+            # Exponential decay: newer = higher boost
+            recency_boost = max(0, recency_weight * (1 - age_days / 90))
+        except Exception:
+            pass
+    
+    total_score = similarity + col_boost + importance_boost + recency_boost
+    return total_score
+
+
 def search_memory(query, project=None, entry_type=None, limit=5, collection=None):
-    """Search across all collections in PARALLEL using ThreadPoolExecutor.
+    """Search across collections with optimized scoring.
     
     Args:
         query: Search query text
@@ -223,11 +272,29 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
         entry_type: Filter by entry type (solution/skill/fact/decision/baseline/chat/prompt)
         limit: Maximum results to return
         collection: If specified, search only this collection (string). Otherwise search all.
+    
+    Returns:
+        List of results sorted by weighted score (similarity + priority + importance + recency)
     """
     client = get_chroma_client()
     ef = get_embedding_function()
 
-    collections_to_query = [collection] if collection else list(COLLECTIONS)
+    # Single collection: direct call (no ThreadPool overhead)
+    if collection:
+        single_result = _search_single_collection(
+            (collection, query, limit, {
+                **({"project": project} if project else {}),
+                **({"entry_type": entry_type} if entry_type else {})
+            }, client, ef)
+        )
+        # Score and sort
+        for entry in single_result:
+            entry["score"] = _score_result(entry)
+        single_result.sort(key=lambda x: x.get("score", 0), reverse=True)
+        return single_result[:limit]
+
+    # Multiple collections: parallel search with ThreadPoolExecutor
+    collections_to_query = list(COLLECTIONS)
 
     where = {}
     if project:
@@ -244,8 +311,7 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
     all_results = []
 
     # Parallel search across collections
-    max_workers = 1 if collection else min(len(collections_to_query), 4)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(collections_to_query), 4)) as executor:
         futures = {executor.submit(_search_single_collection, arg): arg[0] for arg in worker_args}
         for future in as_completed(futures):
             try:
@@ -254,6 +320,10 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
             except Exception:
                 pass
 
-    # Sort by similarity (highest first)
-    all_results.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+    # Apply weighted scoring
+    for entry in all_results:
+        entry["score"] = _score_result(entry)
+
+    # Sort by weighted score (highest first)
+    all_results.sort(key=lambda x: x.get("score", 0), reverse=True)
     return all_results[:limit]

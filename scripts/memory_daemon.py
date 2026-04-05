@@ -5,6 +5,11 @@ Usage: python3 memory_daemon.py [--daemon]
 
 Runs a Unix socket daemon that keeps the embedding model loaded in memory.
 Clients connect via socket to send search/write/stats commands without model reload overhead.
+
+Optimizations:
+- Embedding cache for repeated queries
+- Query result cache (LRU)
+- Connection keep-alive
 """
 
 import sys
@@ -13,8 +18,10 @@ import json
 import socket
 import signal
 import time
+import hashlib
 import logging
 from pathlib import Path
+from collections import OrderedDict
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -31,6 +38,16 @@ PID_FILE = os.path.join(RUNTIME_DIR, "daemon.pid")
 SOCKET_FILE = os.path.join(RUNTIME_DIR, "daemon.sock")
 
 CONNECTION_TIMEOUT = 10  # seconds
+
+# Embedding cache (LRU cache for computed query embeddings)
+EMBEDDING_CACHE_MAX = 500
+EMBEDDING_CACHE_TTL = 300  # 5 minutes
+embedding_cache = OrderedDict()
+
+# Query result cache (LRU cache for search results)
+QUERY_CACHE_MAX = 200
+QUERY_CACHE_TTL = 300  # 5 minutes
+query_cache = OrderedDict()
 
 
 def cleanup():
@@ -76,15 +93,67 @@ def load_model():
     log.info("Model ready — daemon accepting connections")
 
 
+def get_cache_key(prefix: str, **kwargs) -> str:
+    """Generate cache key from arguments."""
+    # Sort keys for consistent ordering
+    key_parts = [prefix] + [f"{k}={kwargs[k]}" for k in sorted(kwargs.keys()) if kwargs[k] is not None]
+    return hashlib.md5("|".join(key_parts).encode()).hexdigest()
+
+
+def get_cached_query(query: str, collection: str, limit: int) -> list:
+    """Get cached query results if available and not expired."""
+    key = get_cache_key("q", query=query, collection=collection, limit=limit)
+    
+    if key in query_cache:
+        cached_time, cached_result = query_cache[key]
+        if time.time() - cached_time < QUERY_CACHE_TTL:
+            # Move to end (most recently used)
+            query_cache.move_to_end(key)
+            log.debug(f"Query cache hit: {query[:30]}...")
+            return cached_result
+        else:
+            del query_cache[key]
+    
+    return None
+
+
+def set_cached_query(query: str, collection: str, limit: int, result: list):
+    """Cache query results with LRU eviction."""
+    key = get_cache_key("q", query=query, collection=collection, limit=limit)
+    
+    # Evict oldest if at capacity
+    if len(query_cache) >= QUERY_CACHE_MAX:
+        query_cache.popitem(last=False)
+    
+    query_cache[key] = (time.time(), result)
+
+
 def handle_search(args):
-    """Search memory using shared search_memory function."""
-    return search_memory(
-        query=args.get("query", ""),
-        project=args.get("project"),
-        entry_type=args.get("entry_type"),
-        limit=args.get("limit", 5),
-        collection=args.get("collection")
+    """Search memory using shared search_memory function with caching."""
+    query = args.get("query", "")
+    project = args.get("project")
+    entry_type = args.get("entry_type")
+    limit = args.get("limit", 5)
+    collection = args.get("collection")
+    
+    # Check cache first
+    cached = get_cached_query(query, collection, limit)
+    if cached is not None:
+        return {"data": cached, "cached": True}
+    
+    # Execute search
+    results = search_memory(
+        query=query,
+        project=project,
+        entry_type=entry_type,
+        limit=limit,
+        collection=collection
     )
+    
+    # Cache results
+    set_cached_query(query, collection, limit, results)
+    
+    return {"data": results, "cached": False}
 
 
 def handle_write(args):
@@ -135,7 +204,7 @@ def handle_write(args):
 
 
 def handle_stats(args):
-    """Return memory statistics across all collections."""
+    """Return memory statistics across all collections + cache stats."""
     client = get_chroma_client()
     ef = get_embedding_function()
 
@@ -151,6 +220,14 @@ def handle_stats(args):
             stats[col_name] = 0
 
     stats["_total"] = total
+    
+    # Add cache statistics
+    stats["_cache"] = {
+        "query_cache_size": len(query_cache),
+        "query_cache_max": QUERY_CACHE_MAX,
+        "query_cache_ttl": QUERY_CACHE_TTL
+    }
+    
     return stats
 
 

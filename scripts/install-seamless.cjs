@@ -181,20 +181,16 @@ function installOpenClawHook() {
 // ───────────────────────────────────────────────────────────────
 function installSkill() {
   const PKG = getPackageRoot();
-  const SKILL_SRC = path.join(PKG, 'skill');
-  const SKILL_DST = path.join(HOME, '.npm-global', 'lib', 'node_modules', 'agents-memory', 'skill');
+  const SKILL_DIR = path.join(PKG, 'skill');
 
-  console.log('\n[3/3] Installing skill files...');
+  console.log('\n[3/3] Verifying skill files...');
 
-  if (!fs.existsSync(SKILL_SRC)) {
+  if (!fs.existsSync(SKILL_DIR)) {
     console.log('  ℹ️  No skill/ directory in package (optional)');
     return false;
   }
 
-  fs.mkdirSync(path.dirname(SKILL_DST), { recursive: true });
-  fs.rmSync(SKILL_DST, { recursive: true, force: true });
-  fs.cpSync(SKILL_SRC, SKILL_DST, { recursive: true });
-  console.log(`  ✅ Skill installed to: ${SKILL_DST}`);
+  console.log(`  ✅ Skill files present at: ${SKILL_DIR}`);
   return true;
 }
 

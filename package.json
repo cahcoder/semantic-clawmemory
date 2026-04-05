@@ -1,9 +1,8 @@
 {
   "name": "agents-memory",
-  "version": "1.0.6",
+  "version": "1.1.1",
   "description": "Universal semantic memory layer for AI CLI tools. Remembers everything, forgets nothing.",
   "main": "src/index.js",
-  "type": "module",
   "bin": {
     "agents-memory": "src/cli.js",
     "am": "src/cli.js",

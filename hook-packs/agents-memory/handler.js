@@ -176,9 +176,13 @@ function optimizeQuery(msg) {
 // ───────────────────────────────────────────────────────────────
 // IN-MEMORY STORE (persists across hook invocations)
 // ───────────────────────────────────────────────────────────────
-let lastUserMessage = null;
+let conversationHistory = [];   // Array of {role, content} objects
 let lastAssistantResponse = null;
 let messageCountSinceCompact = 0;
+
+// Commands that should NOT be stored as conversation content
+const COMMAND_PATTERNS = /^\/(compact|reset|clear|prune|help|status|memory|search|write|gc|stats|exit|quit)/i;
+const isCommand = (msg) => COMMAND_PATTERNS.test(msg?.trim() || "");
 
 // ───────────────────────────────────────────────────────────────
 // SMART SNIPPET EXTRACTION (context-aware, not arbitrary truncation)
@@ -292,8 +296,10 @@ async function messagePreprocessed(event) {
     const rawMsg = getMessageBody(event);
     if (!rawMsg || rawMsg.length < 3) return;
     
-    // Track conversation for POST-LLM
-    lastUserMessage = rawMsg;
+    // Track conversation for POST-LLM (skip commands - they pollute learning)
+    if (!isCommand(rawMsg)) {
+        conversationHistory.push({ role: "user", content: rawMsg });
+    }
     lastAssistantResponse = null;
     messageCountSinceCompact++;
     
@@ -378,30 +384,34 @@ async function messagePreprocessed(event) {
 async function sessionCompactAfter(event) {
     console.log("[agents-memory] Session compacted, checking for learnings...");
     
-    if (!lastUserMessage || messageCountSinceCompact < 2) {
+    // Need meaningful conversation (skip if only commands were said)
+    if (conversationHistory.length < 1 || messageCountSinceCompact < 2) {
         console.log("[agents-memory] Skipping write - insufficient context");
         messageCountSinceCompact = 0;
         return;
     }
     
     try {
-        const learning = {
-            problem: lastUserMessage.slice(0, 200),
-            solution: lastAssistantResponse || "(AI response captured in session)",
-            type: "learning",
-            messagesSinceCompact: messageCountSinceCompact
-        };
+        // Build problem from conversation context
+        const userMessages = conversationHistory
+            .filter(m => m.role === "user")
+            .map(m => m.content)
+            .slice(-5);  // Last 5 user messages max
+        
+        const problem = userMessages.join(" | ") || "(conversation)";
+        const solution = lastAssistantResponse || "(AI response captured in session)";
         
         await daemonCall("write", {
-            problem: learning.problem,
-            solution: learning.solution,
+            problem: problem.slice(0, 200),
+            solution: solution.slice(0, 500),
             type: "learning"
         });
         
-        console.log("[agents-memory] ✅ Stored learning:", learning.problem.slice(0, 50));
+        console.log("[agents-memory] ✅ Stored learning:", problem.slice(0, 50));
+        console.log("[agents-memory] 📚 Conversation size:", conversationHistory.length, "messages");
         
         // Reset after write
-        lastUserMessage = null;
+        conversationHistory = [];
         lastAssistantResponse = null;
         messageCountSinceCompact = 0;
         

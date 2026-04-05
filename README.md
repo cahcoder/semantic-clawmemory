@@ -39,7 +39,7 @@ AI CLI tools share a fatal flaw: **they forget everything between sessions**.
 | Feature | Description |
 |---------|-------------|
 | **Semantic Search** | HNSW/ANN vector search — finds context in 300K+ entries at O(log n) |
-| **Domain Collections** | Separate critical, core, tasks, casual, prompts, progress |
+| **Domain Collections** | Separate critical, core, plan, spec, tasks, casual, prompts, progress |
 | **Sample Templates** | Generic code patterns, not garbage copies |
 | **Self-Improvement** | Detects repeated problems → suggests reusable skills |
 | **Baseline Enforcement** | Never start a project with empty memory |
@@ -57,17 +57,27 @@ Similarity  │ Cosine similarity
 
 ## Installation
 
-### npm (Recommended - Universal)
+### Git Clone (Recommended)
 
 ```bash
-# Install globally
-npm install -g agents-memory
+# Clone
+git clone git@github.com:cahcoder/agents-memory.git
+cd agents-memory
+
+# Install globally from local path
+npm install -g .
 
 # Verify
 agents-memory --help
 
 # Initialize (first time)
 agents-memory init
+```
+
+### npm (When Published)
+
+```bash
+npm install -g agents-memory
 ```
 
 The npm package auto-installs Python dependencies on first use.
@@ -89,7 +99,7 @@ pip install -r requirements.txt
 ### OpenClaw Managed Hook
 
 ```bash
-# Via npm (recommended)
+# Via npm (recommended when published)
 npm install -g agents-memory
 
 # Initialize - installs daemon + OpenClaw hook
@@ -241,7 +251,9 @@ Next time: instant recall, no manual solve needed
 │                                                             │
 │  collections/                                               │
 │  ├── critical/    ← Never delete                           │
-│  ├── core/        ← Project baseline                       │
+│  ├── core/        ← System laws, design decisions          │
+│  ├── plan/        ← Project plans, roadmaps               │
+│  ├── spec/        ← Project specifications                │
 │  ├── tasks/       ← Solutions, skills                     │
 │  ├── casual/      ← Chat, preferences                      │
 │  ├── prompts/     ← Templates                              │

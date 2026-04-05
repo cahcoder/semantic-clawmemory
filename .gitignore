@@ -35,3 +35,14 @@ npm-debug.log*
 # Runtime
 tmp/
 temp/
+
+# Generated tarballs
+*.tgz
+
+# Internal docs (not for npm consumers)
+docs/memory-design-architecture.md
+docs/OPENCLAW-INTEGRATION.md
+hook-packs/agents-memory/HOOK.md
+
+# Package manager
+package-lock.json

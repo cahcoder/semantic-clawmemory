@@ -39,11 +39,13 @@ AI CLI tools share a fatal flaw: **they forget everything between sessions**.
 | Feature | Description |
 |---------|-------------|
 | **Semantic Search** | HNSW/ANN vector search — finds context in 300K+ entries at O(log n) |
+| **Query Expansion** | Expands queries with synonyms for better recall (restart → restart, reboot, reload...) |
 | **Collection Priority** | Results weighted by collection importance (critical > core > plan > spec) |
-| **LRU Cache** | Caches search results (100 entries, 30s TTL) |
-| **Query Optimization** | Stopword removal + smart truncation |
+| **Retrieval Feedback** | Frequently retrieved entries get score boost (implicit positive signal) |
+| **LRU Cache** | Caches search results (200 entries, 5 min TTL) |
+| **Query Optimization** | Stopword removal + smart snippet extraction |
+| **Write Quality Control** | Quality checks, dedup, min length on stored entries |
 | **Domain Collections** | Separate critical, core, plan, spec, important, tasks, casual, prompts, progress |
-| **Self-Improvement** | Detects repeated problems → suggests reusable skills |
 | **Garbage Collection** | Auto dedup, decay, trash old entries |
 
 ## Tech Stack
@@ -133,8 +135,10 @@ tail -f /tmp/openclaw/openclaw-$(date +%Y-%m-%d).log | grep agents-memory
 | `agents-memory init` | Initialize setup (daemon + hook) |
 | `agents-memory search <query>` | Search memory |
 | `agents-memory write <problem> [solution]` | Store learning |
+| `agents-memory batch-write --json '[...]'` | Store multiple learnings |
+| `agents-memory set-project <name>` | Set project context |
 | `agents-memory bootstrap <project>` | Init project memory |
-| `agents-memory gc` | Run garbage collection |
+| `agents-memory gc [--stats]` | Run garbage collection |
 | `agents-memory uninstall` | Complete uninstall |
 
 ---
@@ -189,6 +193,19 @@ Stores new learnings to Chroma
     ↓
 Updates use_count, importance
 ```
+
+### 3. Retrieval Feedback Loop
+
+```
+Entry retrieved in search
+    ↓
+retrieval_count++
+last_retrieved updated
+    ↓
+Frequent retrieval = useful = score boost in future
+```
+
+Score boost formula: `retrieval_boost = min(0.10, 0.01 * log1p(retrieval_count))`
 
 ---
 

@@ -19,7 +19,7 @@ _client = None
 _ef = None
 
 # Collection definitions (shared across modules)
-COLLECTIONS = ["critical", "core", "important", "tasks", "casual", "prompts", "progress"]
+COLLECTIONS = ["critical", "core", "plan", "spec", "important", "tasks", "casual", "prompts", "progress"]
 
 try:
     import chromadb

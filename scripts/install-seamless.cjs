@@ -219,12 +219,32 @@ function main() {
 
   if (daemonOk && hookOk) {
     console.log('\n✅ Setup complete!');
-    console.log('\nNext steps:');
-    console.log('  1. Restart OpenClaw gateway:');
+    console.log('\n╔═══════════════════════════════════════════════════════════╗');
+    console.log('║         MANUAL CONFIGURATION REQUIRED                   ║');
+    console.log('╚═══════════════════════════════════════════════════════════╝');
+    console.log('\n⚠️  You must add this to ~/.openclaw/openclaw.json:');
+    console.log('\n  1. Open: nano ~/.openclaw/openclaw.json');
+    console.log('\n  2. Add to "hooks.internal.entries":');
+    console.log(`
+     "agents-memory": {
+       "enabled": true
+     }
+  `);
+    console.log('\n  3. Add to "plugins.entries":');
+    console.log(`
+     "agents-memory": {
+       "enabled": true
+     }
+  `);
+    console.log('\n  4. (Optional) Remove legacy entries if present:');
+    console.log('     - hooks.internal.entries.session-memory');
+    console.log('     - hooks.internal.entries.semantic-memory');
+    console.log('     - plugins.installs.agents-memory');
+    console.log('\n  5. Restart OpenClaw gateway:');
     console.log('     nohup openclaw gateway restart > /dev/null 2>&1 &');
-    console.log('  2. Verify hook is loaded:');
+    console.log('\n  6. Verify hook is loaded:');
     console.log('     openclaw hooks list');
-    console.log('  3. Test memory pipeline:');
+    console.log('\n  7. Test memory pipeline:');
     console.log('     Send a message to your bot - hook should trigger');
   } else {
     console.log('\n⚠️  Installation incomplete.');

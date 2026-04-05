@@ -334,6 +334,39 @@ memory:
   min_learning_confidence: 0.3
 ```
 
+## Cleanup / Reset
+
+### Fresh reinstall (keep config, reset memory):
+
+```bash
+# Stop daemon
+systemctl --user stop agents-memory-daemon
+
+# Delete memory data
+rm -rf ~/.memory/chroma/
+rm -rf ~/.memory/agents-memory/
+
+# Restart daemon (will reinitialize)
+systemctl --user start agents-memory-daemon
+```
+
+### Complete uninstall:
+
+```bash
+# Run uninstall script
+node /srv/apps/agents-memory/scripts/uninstall.js
+
+# Or manual:
+# 1. Stop services: systemctl --user stop agents-memory-daemon memory-gc.timer memory-trash.timer
+# 2. Delete memory: rm -rf ~/.memory/chroma/ ~/.memory/agents-memory/
+# 3. Delete hooks: rm -rf ~/.openclaw/hooks/agents-memory/
+# 4. Edit openclaw.json - remove these entries:
+#    - hooks.internal.entries.agents-memory
+#    - plugins.entries.agents-memory
+#    - plugins.installs.agents-memory
+# 5. Restart gateway: nohup openclaw gateway restart > /dev/null 2>&1 &
+```
+
 ## License
 
 MIT License — See [LICENSE](LICENSE)

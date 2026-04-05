@@ -107,7 +107,7 @@ console.log(`\n  Memory directory: ${memDir}`);
 console.log('\n[2/2] Running seamless installer...\n');
 
 const pkgRoot = path.dirname(path.dirname(path.resolve(__filename)));
-const installScript = path.join(pkgRoot, 'scripts', 'install-seamless.js');
+const installScript = path.join(pkgRoot, 'scripts', 'install-seamless.cjs');
 
 if (fs.existsSync(installScript)) {
   try {
@@ -119,10 +119,10 @@ if (fs.existsSync(installScript)) {
   } catch (e) {
     console.log('\n⚠️  Seamless installer had issues, but core setup is complete.');
     console.log('   You can run the installer manually:');
-    console.log('   node scripts/install-seamless.js');
+    console.log('   node scripts/install-seamless.cjs');
   }
 } else {
-  console.log('  ℹ️  install-seamless.js not found, skipping daemon/plugin setup');
+  console.log('  ℹ️  install-seamless.cjs not found, skipping daemon/plugin setup');
 }
 
 console.log('\n═══════════════════════════════════════════════════════════\n');

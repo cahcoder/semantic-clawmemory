@@ -26,9 +26,9 @@ from logger import get_logger
 
 log = get_logger("memory-daemon")
 
-RUNTIME_DIR = os.environ.get("AGENTS_MEMORY_RUNTIME_DIR", "/tmp")
-PID_FILE = os.path.join(RUNTIME_DIR, "agents-memory-daemon.pid")
-SOCKET_FILE = os.path.join(RUNTIME_DIR, "agents-memory-daemon.sock")
+RUNTIME_DIR = os.environ.get("AGENTS_MEMORY_RUNTIME_DIR", os.path.join(os.environ.get("HOME", "/home/" + os.environ.get("USER", "developer")), ".memory", "agents-memory"))
+PID_FILE = os.path.join(RUNTIME_DIR, "daemon.pid")
+SOCKET_FILE = os.path.join(RUNTIME_DIR, "daemon.sock")
 
 CONNECTION_TIMEOUT = 10  # seconds
 

@@ -26,7 +26,7 @@ from logger import get_logger
 
 log = get_logger("memory-daemon")
 
-RUNTIME_DIR = "/tmp"
+RUNTIME_DIR = os.environ.get("AGENTS_MEMORY_RUNTIME_DIR", "/tmp")
 PID_FILE = os.path.join(RUNTIME_DIR, "agents-memory-daemon.pid")
 SOCKET_FILE = os.path.join(RUNTIME_DIR, "agents-memory-daemon.sock")
 

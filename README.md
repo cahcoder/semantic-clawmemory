@@ -86,30 +86,20 @@ pip install -r requirements.txt
 ./scripts/memory-wrapper --help
 ```
 
-### OpenClaw Plugin
+### OpenClaw Managed Hook
 
 ```bash
-# Via npm
+# Via npm (recommended)
 npm install -g agents-memory
 
-# Or clone + link
-git clone git@github.com:cahcoder/agents-memory.git
-cd agents-memory
-npm link
+# Initialize - installs daemon + OpenClaw hook
+node scripts/install-seamless.js
+
+# Or use CLI if supported
+agents-memory init
 ```
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Add to PATH
-export PATH="$PWD/skill:$PATH"
-```
-
-### OpenClaw Plugin
-
-```bash
-openclaw plugin install agents-memory
-```
+For full OpenClaw integration guide, see [docs/OPENCLAW-INTEGRATION.md](docs/OPENCLAW-INTEGRATION.md).
 
 ## After Install (Required for AI CLI Tools)
 

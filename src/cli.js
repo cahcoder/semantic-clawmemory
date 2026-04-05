@@ -575,6 +575,48 @@ Only store generic patterns, not specific values.
   });
 
 program
+  .command('uninstall')
+  .description('Completely uninstall agents-memory from system')
+  .action(() => {
+    // Find uninstall script
+    const uninstallPaths = [
+      path.join(__dirname, '..', 'scripts', 'uninstall.js'),
+      path.join(os.homedir(), '.npm-global', 'lib', 'node_modules', 'agents-memory', 'scripts', 'uninstall.js'),
+      '/usr/lib/node_modules/agents-memory/scripts/uninstall.js',
+      '/usr/local/lib/node_modules/agents-memory/scripts/uninstall.js',
+    ];
+
+    let uninstallScript = null;
+    for (const p of uninstallPaths) {
+      if (fs.existsSync(p)) {
+        uninstallScript = p;
+        break;
+      }
+    }
+
+    if (!uninstallScript) {
+      console.error(chalk.red('Error: uninstall script not found.'));
+      console.error(chalk.gray('Try: node ~/.npm-global/lib/node_modules/agents-memory/scripts/uninstall.js'));
+      process.exit(1);
+    }
+
+    // Run uninstall script
+    console.log(chalk.blue('Running uninstaller...'));
+    try {
+      const child = spawn('node', [uninstallScript], {
+        stdio: 'inherit',
+        shell: false
+      });
+      child.on('close', (code) => {
+        process.exit(code || 0);
+      });
+    } catch (e) {
+      console.error(chalk.red('Failed to run uninstaller:'), e.message);
+      process.exit(1);
+    }
+  });
+
+program
   .command('init-project')
   .description('Create or append AGENTS.md section for semantic memory')
   .action(() => {

@@ -198,6 +198,73 @@ def get_timestamp():
     return datetime.utcnow().isoformat() + "Z"
 
 
+# Query expansion synonyms (common technical terms)
+# Maps terms to their synonyms - expanded at search time
+QUERY_SYNONYMS = {
+    # Restart/reboot
+    "restart": ["restart", "reboot", "start again", "reload", "reset"],
+    "crash": ["crash", "crashes", "crashed", "fails", "failed", "failure", "broken", "error", "segfault", "panic"],
+    "install": ["install", "installation", "setup", "set up", "configure", "setup"],
+    "uninstall": ["uninstall", "remove", "delete", "clean", "purge"],
+    "update": ["update", "upgrade", "updating", "upgrading", "patch"],
+    "fix": ["fix", "fixes", "fixed", "fixing", "repair", "patch", "hotfix"],
+    "error": ["error", "errors", "errored", "exception", "fail", "failed", "failure"],
+    "bug": ["bug", "bugs", "buggy", "issue", "defect", "problem"],
+    "memory": ["memory", "mem", "ram", "heap", "usage"],
+    "disk": ["disk", "storage", "space", "storage", "ssd", "hdd", "disk space"],
+    "cpu": ["cpu", "processor", "core", "compute"],
+    "network": ["network", "net", "internet", "connection", "connectivity"],
+    "docker": ["docker", "container", "containerd", "podman", "containerization"],
+    "postgres": ["postgres", "postgresql", "pg", "database", "db"],
+    "npm": ["npm", "node", "nodejs", "package manager", "npx"],
+    "python": ["python", "python3", "pip", "py"],
+    "git": ["git", "github", "version control", "commit", "branch"],
+    "systemd": ["systemd", "service", "services", "daemon", "systemctl", "unit"],
+    "gateway": ["gateway", "openclaw", "gateway daemon", "gateway service"],
+    "hook": ["hook", "hooks", "plugin", "plugins", "integration"],
+    "config": ["config", "configuration", "settings", "configure", "cfg"],
+    "permission": ["permission", "permissions", "permission denied", "access", "auth", "authorization", "unauthorized", "forbidden"],
+    "timeout": ["timeout", "timed out", "connection timeout", "request timeout", "slow", "latency"],
+    "cache": ["cache", "cached", "caching", "clear cache", "invalidate"],
+    "token": ["token", "tokens", "api key", "apikey", "api_key", "authentication"],
+    "pipeline": ["pipeline", "pipelines", "workflow", "processing"],
+}
+
+
+def expand_query(query: str) -> str:
+    """Expand query with synonyms for better recall.
+    
+    Instead of searching just 'restart', also search for 'reboot', 'start again', etc.
+    This improves recall without sacrificing accuracy.
+    """
+    if not query or len(query) < 3:
+        return query
+    
+    # Tokenize query
+    words = query.lower().split()
+    expanded_words = set(words)
+    
+    for word in words:
+        # Remove common punctuation
+        clean_word = word.strip('.,!?;:()[]{}')
+        
+        # Check if word has synonyms
+        for key, synonyms in QUERY_SYNONYMS.items():
+            if clean_word in synonyms or clean_word == key:
+                # Add all synonyms to expanded query
+                expanded_words.update(synonyms)
+                break  # Only match once per word group
+    
+    # Rebuild query with expanded words
+    expanded_query = ' '.join(sorted(expanded_words))
+    
+    # If expansion didn't add anything, return original
+    if len(expanded_words) == len(words):
+        return query
+    
+    return expanded_query
+
+
 def _search_single_collection(args):
     """Worker function for parallel collection search.
     Args: tuple of (col_name, query, limit, where, client, ef)
@@ -341,8 +408,8 @@ def _score_result(entry, query="", recency_weight=0.05):
     return score
 
 
-def search_memory(query, project=None, entry_type=None, limit=5, collection=None):
-    """Search across collections with optimized scoring.
+def search_memory(query, project=None, entry_type=None, limit=5, collection=None, use_expansion=True):
+    """Search across collections with optimized scoring and optional query expansion.
     
     Args:
         query: Search query text
@@ -350,12 +417,22 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
         entry_type: Filter by entry type (solution/skill/fact/decision/baseline/chat/prompt)
         limit: Maximum results to return
         collection: If specified, search only this collection (string). Otherwise search all.
+        use_expansion: If True, expand query with synonyms for better recall (default: True)
     
     Returns:
         List of results sorted by weighted score (similarity + priority + importance + recency)
     """
     client = get_chroma_client()
     ef = get_embedding_function()
+
+    # Expand query with synonyms for better recall
+    original_query = query
+    if use_expansion:
+        query = expand_query(query)
+        if query != original_query:
+            logging.getLogger("semantic-memory").debug(
+                f"Query expanded: '{original_query}' -> '{query}'"
+            )
 
     # Single collection: direct call (no ThreadPool overhead)
     if collection:
@@ -367,7 +444,7 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
         )
         # Score and sort (pass query for keyword cross-validation)
         for entry in single_result:
-            entry["score"] = _score_result(entry, query=query)
+            entry["score"] = _score_result(entry, query=original_query)
         single_result.sort(key=lambda x: x.get("score", 0), reverse=True)
         return single_result[:limit]
 
@@ -398,9 +475,9 @@ def search_memory(query, project=None, entry_type=None, limit=5, collection=None
             except Exception:
                 pass
 
-    # Apply weighted scoring (pass query for keyword cross-validation)
+    # Apply weighted scoring (pass ORIGINAL query for keyword cross-validation)
     for entry in all_results:
-        entry["score"] = _score_result(entry, query=query)
+        entry["score"] = _score_result(entry, query=original_query)
 
     # Filter out negative scores (below similarity threshold AND no keyword match)
     all_results = [r for r in all_results if r.get("score", -1) >= 0]

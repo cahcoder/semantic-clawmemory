@@ -2,7 +2,7 @@
 
 chroma:
   # Where to persist Chroma database
-  persist_directory: "~/.memory/chroma"
+  persist_directory: "~/.memory/agents-memory"
   
   # Embedding model (all-MiniLM-L6-v2 is fast + good quality)
   embedding_model: "all-MiniLM-L6-v2"

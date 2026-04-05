@@ -76,7 +76,7 @@ def get_settings():
 
     return {
         "chroma": {
-            "persist_directory": "~/.memory/chroma",
+            "persist_directory": "~/.memory/agents-memory",
             "embedding_model": "all-MiniLM-L6-v2",
             "dimensions": 384,
         }
